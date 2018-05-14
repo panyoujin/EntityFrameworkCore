@@ -462,6 +462,19 @@ FROM (
 GROUP BY [t].[Key]");
         }
 
+        public override void GroupBy_Constant_with_element_selector_Select_Sum()
+        {
+            base.GroupBy_Constant_with_element_selector_Select_Sum();
+
+            AssertSql(
+                @"SELECT SUM([t].[OrderID]) AS [Sum]
+FROM (
+    SELECT [o].[OrderID], [o].[OrderDate], 2 AS [Key]
+    FROM [Orders] AS [o]
+) AS [t]
+GROUP BY [t].[Key]");
+        }
+
         public override void GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg()
         {
             base.GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg();

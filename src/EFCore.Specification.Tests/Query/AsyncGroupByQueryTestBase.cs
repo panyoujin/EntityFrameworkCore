@@ -604,6 +604,19 @@ namespace Microsoft.EntityFrameworkCore.Query
         }
 
         [ConditionalFact]
+        public virtual async Task GroupBy_Constant_with_element_selector_Select_Sum()
+        {
+            await AssertQuery<Order>(
+                os => os.GroupBy(o => 2, o => new { o.OrderID, o.OrderDate }).Select(
+                    g =>
+                        new
+                        {
+                            Sum = g.Sum(o => o.OrderID),
+                        }),
+                e => e.Sum);
+        }
+
+        [ConditionalFact]
         public virtual async Task GroupBy_after_predicate_Constant_Select_Sum_Min_Key_Max_Avg()
         {
             await AssertQuery<Order>(
