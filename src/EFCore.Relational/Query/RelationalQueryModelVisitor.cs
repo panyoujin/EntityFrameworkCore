@@ -1214,7 +1214,10 @@ namespace Microsoft.EntityFrameworkCore.Query
                                 newShaper = oldShaper.Unwrap(querySourceReferenceExpression.ReferencedQuerySource);
                             }
 
-                            newShaper = newShaper ?? ProjectionShaper.Create(oldShaper, materializer);
+                            var storeMaterializerExpression
+                                = CoreStrings.LogQueryExecutionPlanned.GetLogBehavior(QueryCompilationContext.Logger) != WarningBehavior.Ignore;
+
+                            newShaper = newShaper ?? ProjectionShaper.Create(oldShaper, materializer, storeMaterializerExpression);
 
                             Expression =
                                 Expression.Call(
@@ -1530,8 +1533,11 @@ namespace Microsoft.EntityFrameworkCore.Query
 
             var materializerLambda = (LambdaExpression)selectManyMethodCallExpression.Arguments.Last();
 
+            var storeMaterializerExpression
+                = CoreStrings.LogQueryExecutionPlanned.GetLogBehavior(QueryCompilationContext.Logger) != WarningBehavior.Ignore;
+
             var compositeShaper
-                = CompositeShaper.Create(fromClause, outerShaper, innerShaper, materializerLambda);
+                = CompositeShaper.Create(fromClause, outerShaper, innerShaper, materializerLambda, storeMaterializerExpression);
 
             compositeShaper.SaveAccessorExpression(QueryCompilationContext.QuerySourceMapping);
 
@@ -1638,8 +1644,11 @@ namespace Microsoft.EntityFrameworkCore.Query
             {
                 var materializerLambda = (LambdaExpression)joinMethodCallExpression.Arguments.Last();
 
+                var storeMaterializerExpression
+                    = CoreStrings.LogQueryExecutionPlanned.GetLogBehavior(QueryCompilationContext.Logger) != WarningBehavior.Ignore;
+
                 var compositeShaper
-                    = CompositeShaper.Create(joinClause, outerShaper, innerShaper, materializerLambda);
+                    = CompositeShaper.Create(joinClause, outerShaper, innerShaper, materializerLambda, storeMaterializerExpression);
 
                 compositeShaper.SaveAccessorExpression(QueryCompilationContext.QuerySourceMapping);
 
@@ -1926,8 +1935,11 @@ namespace Microsoft.EntityFrameworkCore.Query
                 previousParameter,
                 innerItemParameter);
 
+            var storeMaterializerExpression
+                = CoreStrings.LogQueryExecutionPlanned.GetLogBehavior(QueryCompilationContext.Logger) != WarningBehavior.Ignore;
+
             var compositeShaper
-                = CompositeShaper.Create(additionalFromClause, outerShaper, innerShaper, materializerLambda);
+                = CompositeShaper.Create(additionalFromClause, outerShaper, innerShaper, materializerLambda, storeMaterializerExpression);
 
             IntroduceTransparentScope(additionalFromClause, queryModel, index, transparentIdentifierType);
 

@@ -25,7 +25,6 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
     public class ExpressionPrinter : ExpressionVisitorBase, IExpressionPrinter
     {
         private readonly IndentedStringBuilder _stringBuilder;
-        private readonly List<ConstantPrinterBase> _constantPrinters;
         private readonly Dictionary<ParameterExpression, string> _parametersInScope;
 
         private readonly Dictionary<ExpressionType, string> _binaryOperandMap = new Dictionary<ExpressionType, string>
@@ -68,12 +67,20 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        protected ExpressionPrinter(List<ConstantPrinterBase> constantPrinters)
+        protected List<ConstantPrinterBase> ConstantPrinters = new List<ConstantPrinterBase>();
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        protected ExpressionPrinter(List<ConstantPrinterBase> additionalConstantPrinters)
         {
             _stringBuilder = new IndentedStringBuilder();
             _parametersInScope = new Dictionary<ParameterExpression, string>();
-            _constantPrinters = new List<ConstantPrinterBase>(constantPrinters);
-            _constantPrinters.AddRange(
+
+            ConstantPrinters.AddRange(additionalConstantPrinters);
+
+            ConstantPrinters.AddRange(
                 new List<ConstantPrinterBase>
                 {
                     new EntityQueryableConstantPrinter(),
@@ -452,7 +459,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                 _stringBuilder.SuspendCurrentNode();
             }
 
-            foreach (var constantPrinter in _constantPrinters)
+            foreach (var constantPrinter in ConstantPrinters)
             {
                 if (constantPrinter.TryPrintConstant(constantExpression, _stringBuilder, RemoveFormatting))
                 {
@@ -609,6 +616,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
             "StartTracking",
             "SetRelationshipSnapshotValue",
             "SetRelationshipIsLoaded",
+            "Add"
         };
 
         /// <summary>
@@ -696,19 +704,14 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
             var isComplex = newExpression.Arguments.Count > 1;
             var appendAction = isComplex ? (Action<string>)AppendLine : Append;
 
-            if (PrintConnections)
-            {
-                _stringBuilder.SuspendCurrentNode();
-            }
-
             appendAction("(");
 
             if (isComplex)
             {
-                _stringBuilder.IncrementIndent(PrintConnections);
+                _stringBuilder.IncrementIndent();
             }
 
-            VisitArguments(newExpression.Arguments, appendAction, areConnected: isComplex);
+            VisitArguments(newExpression.Arguments, appendAction);
 
             if (isComplex)
             {
@@ -716,11 +719,6 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
             }
 
             _stringBuilder.Append(")");
-
-            if (PrintConnections)
-            {
-                _stringBuilder.ReconnectCurrentNode();
-            }
 
             return newExpression;
         }
